@@ -1,36 +1,163 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YouTube Comment Bot - Setup Instructions
 
-## Getting Started
+## Prerequisites
 
-First, run the development server:
+1. **Google Cloud Console Setup**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable YouTube Data API v3
+   - Create OAuth 2.0 credentials
+   - Add authorized redirect URIs:
+     - `http://localhost:3000/api/auth/callback/google` (development)
+     - `https://yourdomain.com/api/auth/callback/google` (production)
+   - Copy Client ID and Client Secret
+
+2. **Google Gemini API**
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key for Gemini
+   - Copy the API key
+
+## Installation
+
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure Environment Variables**
+   
+   Update `.env.local` with your credentials:
+   ```env
+   # Generate secret: openssl rand -base64 32
+   NEXTAUTH_SECRET=your-generated-secret-here
+   NEXTAUTH_URL=http://localhost:3000
+
+   # Google OAuth (from Google Cloud Console)
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=your-client-secret
+
+   # Google Gemini AI
+   GEMINI_API_KEY=your-gemini-api-key
+   ```
+
+3. **Generate NextAuth Secret**
+   ```bash
+   openssl rand -base64 32
+   ```
+
+## Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Step 1: Connect YouTube
+- OAuth 2.0 authentication with YouTube
+- Secure token storage in JWT session
 
-## Learn More
+### Step 2: Select Topic
+- Browse curated topic categories
+- Custom topic search
+- Paste YouTube video URLs
+- Search results with video previews
 
-To learn more about Next.js, take a look at the following resources:
+### Step 3: Define Comment
+- Pre-built comment templates
+- Sentiment-based generation
+- Custom context input
+- AI-powered with Gemini 2.0 Flash
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Step 4: Review & Post
+- Edit generated comment
+- Regenerate with one click
+- Post directly to YouTube
+- Confirmation before posting
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Mobile-First Design
 
-## Deploy on Vercel
+- Responsive layouts for all screen sizes
+- Touch-friendly 44px minimum button sizes
+- Progressive form wizard with clear steps
+- Mobile-optimized component layouts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API Endpoints
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `GET /api/youtube/search?query=topic` - Search videos
+- `GET /api/youtube/video?url=...` - Get video by URL
+- `POST /api/youtube/comment` - Post comment
+- `POST /api/ai/generate` - Generate AI comment
+- `GET /api/youtube/channel` - Get channel info
+
+## Security Features
+
+- NextAuth.js JWT-based authentication
+- Encrypted session cookies
+- Google OAuth 2.0 flow
+- Zod schema validation on all API routes
+- Protected API routes with middleware
+- Secure token refresh handling
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Authentication**: NextAuth.js v5
+- **UI**: shadcn/ui + Tailwind CSS
+- **State Management**: Zustand
+- **Forms**: React Hook Form + Zod
+- **AI**: Google Gemini 2.0 Flash
+- **YouTube API**: googleapis
+- **Notifications**: Sonner
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project in Vercel
+3. Add environment variables in Vercel dashboard
+4. Update OAuth redirect URI with production domain
+5. Deploy
+
+### Environment Variables for Production
+
+```env
+NEXTAUTH_SECRET=your-production-secret
+NEXTAUTH_URL=https://yourdomain.com
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GEMINI_API_KEY=your-gemini-key
+```
+
+## YouTube API Quotas
+
+- Default quota: 10,000 units/day
+- Search: 100 units per request
+- Comment insert: 50 units per request
+- Monitor usage in Google Cloud Console
+
+## Troubleshooting
+
+### OAuth Not Working
+- Verify redirect URIs match exactly
+- Check OAuth consent screen configuration
+- Ensure YouTube Data API v3 is enabled
+
+### Comment Posting Fails
+- Check YouTube API quota
+- Verify channel has commenting enabled
+- Ensure proper OAuth scopes
+
+### Gemini Generation Fails
+- Verify API key is correct
+- Check Gemini API quota/billing
+- Review prompt length limits
+
+## License
+
+MIT
