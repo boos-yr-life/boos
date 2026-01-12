@@ -3,6 +3,13 @@ import { auth } from '@/auth';
 import { getCommentEngagement } from '@/lib/youtube';
 import { sql } from '@/db';
 
+type CommentRecord = {
+  id: string;
+  youtubeCommentId: string | null;
+  likeCount: number;
+  replyCount: number;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch updated engagement data from YouTube
     const updatedComments = await Promise.all(
-      comments.map(async (comment) => {
+      comments.map(async (comment: CommentRecord) => {
         if (!comment.youtubeCommentId) {
           return {
             id: comment.id,

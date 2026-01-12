@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { sql } from '@/db';
 
+type Comment = {
+  id: string;
+  videoId: string;
+  videoTitle: string;
+  videoUrl: string;
+  channelTitle: string;
+  commentText: string;
+  sentiment: string;
+  likeCount: number;
+  replyCount: number;
+  postedAt: Date;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -49,14 +62,14 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats
     const totalComments = comments.length;
-    const totalLikes = comments.reduce((sum, c) => sum + (c.likeCount || 0), 0);
-    const totalReplies = comments.reduce((sum, c) => sum + (c.replyCount || 0), 0);
+    const totalLikes = comments.reduce((sum: number, c: Comment) => sum + (c.likeCount || 0), 0);
+    const totalReplies = comments.reduce((sum: number, c: Comment) => sum + (c.replyCount || 0), 0);
     const engagementRate = totalComments > 0 
       ? ((totalLikes + totalReplies) / totalComments).toFixed(2)
       : 0;
 
     // Group by video for top performers
-    const videoGroups = comments.reduce((acc, comment) => {
+    const videoGroups = comments.reduce((acc: Record<string, any>, comment: Comment) => {
       if (!acc[comment.videoId]) {
         acc[comment.videoId] = {
           videoId: comment.videoId,
@@ -94,9 +107,9 @@ export async function GET(request: NextRequest) {
 
     // Get recent comments
     const recentComments = comments
-      .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+      .sort((a: Comment, b: Comment) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
       .slice(0, 10)
-      .map(comment => ({
+      .map((comment: Comment) => ({
         id: comment.id,
         videoId: comment.videoId,
         videoTitle: comment.videoTitle,
