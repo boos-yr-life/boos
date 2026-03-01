@@ -1,26 +1,34 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { SentimentType } from '@/types';
+import { SentimentType, Platform } from '@/types';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function generateComment({
-  videoTitle,
-  videoDescription,
-  channelTitle,
+  platform,
+  contentTitle,
+  contentDescription,
+  authorName,
   template,
   sentiment,
   additionalContext,
   transcript,
 }: {
-  videoTitle: string;
-  videoDescription: string;
-  channelTitle: string;
+  platform: Platform;
+  contentTitle: string;
+  contentDescription?: string;
+  authorName: string;
   template?: string;
   sentiment?: SentimentType;
   additionalContext?: string;
   transcript?: string | null;
 }): Promise<string> {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const platformNames = {
+    youtube: 'YouTube',
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+  };
 
   const sentimentInstructions = {
     positive: 'Use an encouraging and appreciative tone. Be supportive and highlight the positive aspects.',
@@ -29,16 +37,16 @@ export async function generateComment({
     enthusiastic: 'Show excitement and genuine engagement. Be energetic and passionate about the topic.',
   };
 
-  const transcriptSection = transcript 
-    ? `\n\nVideo Transcript (excerpt):\n${transcript}`
+  const transcriptSection = transcript
+    ? `\n\nContent Transcript (excerpt):\n${transcript}`
     : '';
 
-  const prompt = `You are helping a user create a thoughtful, authentic YouTube comment.
+  const prompt = `You are helping a user create a thoughtful, authentic ${platformNames[platform]} comment.
 
-Video Information:
-- Title: ${videoTitle}
-- Channel: ${channelTitle}
-- Description: ${videoDescription.slice(0, 500)}${transcriptSection}
+Content Information:
+- Title/Caption: ${contentTitle}
+- Author: ${authorName}
+${contentDescription ? `- Description: ${contentDescription.slice(0, 500)}` : ''}${transcriptSection}
 
 ${template ? `Template/Style to Follow:\n${template}\n` : ''}
 
@@ -49,7 +57,7 @@ ${additionalContext ? `Additional Context from User:\n${additionalContext}\n` : 
 Instructions:
 1. Create a genuine, personalized comment that feels natural and human
 2. Keep it SHORT: 1-2 sentences (20-40 words max)
-3. Be specific to this video's content${transcript ? ' (reference the transcript when relevant)' : ''}
+3. Be specific to this content's topic${transcript ? ' (reference the transcript when relevant)' : ''}
 4. Avoid generic praise - reference actual content when possible
 5. Make it conversational and authentic
 6. Do NOT use emojis unless specifically requested

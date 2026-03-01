@@ -33,20 +33,21 @@ export function ReviewComment() {
 
     setIsRegenerating(true);
     try {
-      const template = data.selectedTemplate 
+      const template = data.selectedTemplate
         ? COMMENT_TEMPLATES.find((t: any) => t.id === data.selectedTemplate)?.template
         : undefined;
 
-      // Use stored transcript if available
+      // Use stored transcript if available (YouTube only)
       const transcript = data.videoTranscripts?.[currentVideo.id] || null;
 
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          videoTitle: currentVideo.title,
-          videoDescription: currentVideo.description,
-          channelTitle: currentVideo.channelTitle,
+          platform: data.selectedPlatform,
+          contentTitle: currentVideo.title || '',
+          contentDescription: currentVideo.description || '',
+          authorName: currentVideo.channelTitle || '',
           template,
           sentiment: data.selectedSentiment,
           additionalContext: data.additionalContext,
@@ -74,19 +75,38 @@ export function ReviewComment() {
 
   const handlePost = async () => {
     if (!currentVideo || !currentComment) {
-      toast.error('Missing video or comment');
+      toast.error('Missing content or comment');
       return;
     }
 
     setIsPosting(true);
     try {
-      const response = await fetch('/api/youtube/comment', {
+      // Determine API endpoint based on platform
+      const apiEndpoints = {
+        youtube: '/api/youtube/comment',
+        instagram: '/api/instagram/comment',
+        facebook: '/api/facebook/comment',
+      };
+
+      const apiEndpoint = apiEndpoints[data.selectedPlatform || 'youtube'];
+
+      // Prepare request body based on platform
+      let requestBody: any = {
+        commentText: currentComment,
+      };
+
+      if (data.selectedPlatform === 'youtube') {
+        requestBody.videoId = currentVideo.id;
+      } else if (data.selectedPlatform === 'instagram') {
+        requestBody.postId = currentVideo.id;
+      } else if (data.selectedPlatform === 'facebook') {
+        requestBody.postId = currentVideo.id;
+      }
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId: currentVideo.id,
-          commentText: currentComment,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
@@ -94,14 +114,21 @@ export function ReviewComment() {
       if (result.success) {
         // Save comment to database for analytics tracking
         if (session?.user?.id) {
+          const contentUrl = data.selectedPlatform === 'youtube'
+            ? `https://www.youtube.com/watch?v=${currentVideo.id}`
+            : data.selectedPlatform === 'instagram'
+            ? `https://instagram.com/p/${currentVideo.id}`
+            : `https://facebook.com/${currentVideo.id}`;
+
           await savePostedComment(session.user.id, {
-            videoId: currentVideo.id,
-            videoTitle: currentVideo.title,
-            videoUrl: `https://www.youtube.com/watch?v=${currentVideo.id}`,
-            channelTitle: currentVideo.channelTitle,
+            platform: data.selectedPlatform || 'youtube',
+            contentId: currentVideo.id,
+            contentTitle: currentVideo.title || '',
+            contentUrl,
+            authorName: currentVideo.channelTitle || '',
             commentText: currentComment,
             sentiment: data.selectedSentiment || 'neutral',
-            youtubeCommentId: result.commentId || '',
+            platformCommentId: result.commentId || '',
             likeCount: 0,
             replyCount: 0,
           });
@@ -109,7 +136,7 @@ export function ReviewComment() {
 
         setPostedVideos(prev => new Set([...prev, currentVideo.id]));
         toast.success(`Comment posted and tracked! (${postedVideos.size + 1}/${videos.length})`);
-        
+
         // Move to next video or finish
         if (currentVideoIndex < videos.length - 1) {
           setCurrentVideoIndex(currentVideoIndex + 1);
@@ -239,7 +266,8 @@ export function ReviewComment() {
         {/* Warning */}
         <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <p className="text-sm text-yellow-900 dark:text-yellow-100">
-            ⚠️ Comments will be posted publicly on YouTube. Review carefully before posting.
+            ⚠️ Comments will be posted publicly on {data.selectedPlatform === 'youtube' ? 'YouTube' : data.selectedPlatform === 'instagram' ? 'Instagram' : 'Facebook'}.
+            Review carefully before posting.
           </p>
         </div>
 

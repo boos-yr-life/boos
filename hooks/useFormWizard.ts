@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { WizardState, WizardData } from '@/types';
+import { WizardState, WizardData, Platform } from '@/types';
 
 const initialData: WizardData = {
-  youtubeConnected: true,
+  youtubeConnected: false,
+  instagramConnected: false,
+  facebookConnected: false,
 };
 
 export const useFormWizard = create<WizardState>((set) => ({
@@ -14,6 +16,6 @@ export const useFormWizard = create<WizardState>((set) => ({
       data: { ...state.data, ...newData },
     })),
   reset: () => set({ step: 1, data: initialData }),
-  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 3) })),
+  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 5) })),
   prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
 }));

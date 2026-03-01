@@ -3,25 +3,13 @@
  * Uses PostgreSQL to persist comments across devices and sessions.
  */
 
-export interface StoredComment {
-  id: string;
-  userId: string;
-  videoId: string;
-  videoTitle: string;
-  videoUrl: string;
-  channelTitle: string;
-  commentText: string;
-  sentiment: string;
-  youtubeCommentId: string;
-  likeCount: number;
-  replyCount: number;
-  postedAt: string;
-  lastSyncedAt: string;
-}
+import { PostedComment } from '@/types';
+
+export type StoredComment = PostedComment;
 
 export async function savePostedComment(
   userId: string,
-  comment: Omit<StoredComment, 'id' | 'userId' | 'postedAt' | 'lastSyncedAt'>
+  comment: Omit<PostedComment, 'id' | 'userId' | 'postedAt' | 'lastSyncedAt'>
 ): Promise<{ id: string }> {
   const response = await fetch('/api/comments/save', {
     method: 'POST',
@@ -36,9 +24,9 @@ export async function savePostedComment(
   return response.json();
 }
 
-export async function getPostedComments(userId: string): Promise<StoredComment[]> {
+export async function getPostedComments(userId: string): Promise<PostedComment[]> {
   const response = await fetch(`/api/comments?userId=${encodeURIComponent(userId)}`);
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch comments');
   }

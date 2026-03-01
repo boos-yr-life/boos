@@ -14,16 +14,17 @@ export async function GET(request: NextRequest) {
     }
 
     const comments = await sql`
-      SELECT 
+      SELECT
         id,
         user_id as "userId",
-        video_id as "videoId",
-        video_title as "videoTitle",
-        video_url as "videoUrl",
-        channel_title as "channelTitle",
+        platform,
+        content_id as "contentId",
+        content_title as "contentTitle",
+        content_url as "contentUrl",
+        author_name as "authorName",
         comment_text as "commentText",
         sentiment,
-        youtube_comment_id as "youtubeCommentId",
+        platform_comment_id as "platformCommentId",
         like_count as "likeCount",
         reply_count as "replyCount",
         posted_at as "postedAt",

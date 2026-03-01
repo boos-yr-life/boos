@@ -15,36 +15,39 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      videoId,
-      videoTitle,
-      videoUrl,
-      channelTitle,
+      platform,
+      contentId,
+      contentTitle,
+      contentUrl,
+      authorName,
       commentText,
       sentiment,
-      youtubeCommentId,
+      platformCommentId,
     } = body;
 
     const [comment] = await sql`
       INSERT INTO posted_comments (
         user_id,
-        video_id,
-        video_title,
-        video_url,
-        channel_title,
+        platform,
+        content_id,
+        content_title,
+        content_url,
+        author_name,
         comment_text,
         sentiment,
-        youtube_comment_id,
+        platform_comment_id,
         like_count,
         reply_count
       ) VALUES (
         ${session.user.id},
-        ${videoId},
-        ${videoTitle},
-        ${videoUrl},
-        ${channelTitle},
+        ${platform || 'youtube'},
+        ${contentId},
+        ${contentTitle},
+        ${contentUrl},
+        ${authorName},
         ${commentText},
         ${sentiment || 'neutral'},
-        ${youtubeCommentId || null},
+        ${platformCommentId || null},
         0,
         0
       )

@@ -38,23 +38,25 @@ export function DefineComment() {
 
   const generateAllComments = async () => {
     setIsGenerating(true);
-    
+
     try {
       // Generate all comments in parallel
-      const generatePromises = videos.map(async (video, index) => {
-        const sentiment = data.videoSentiments?.[video.id] || 'positive';
-        
+      const generatePromises = videos.map(async (content, index) => {
+        const sentiment = data.videoSentiments?.[content.id] || 'positive';
+
         try {
-          // Fetch transcript
+          // For YouTube, try to fetch transcript
           let transcript: string | null = null;
-          try {
-            const transcriptResponse = await fetch(
-              `/api/youtube/video?url=https://www.youtube.com/watch?v=${video.id}`
-            );
-            const transcriptData = await transcriptResponse.json();
-            transcript = transcriptData.transcript || null;
-          } catch (err) {
-            console.log('Could not fetch transcript, using metadata only');
+          if (data.selectedPlatform === 'youtube') {
+            try {
+              const transcriptResponse = await fetch(
+                `/api/youtube/video?url=https://www.youtube.com/watch?v=${content.id}`
+              );
+              const transcriptData = await transcriptResponse.json();
+              transcript = transcriptData.transcript || null;
+            } catch (err) {
+              console.log('Could not fetch transcript, using metadata only');
+            }
           }
 
           // Generate comment
@@ -62,9 +64,10 @@ export function DefineComment() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              videoTitle: video.title,
-              videoDescription: video.description,
-              channelTitle: video.channelTitle,
+              platform: data.selectedPlatform,
+              contentTitle: content.title || '',
+              contentDescription: content.description || '',
+              authorName: content.channelTitle || '',
               sentiment: sentiment,
               transcript,
             }),
@@ -75,50 +78,50 @@ export function DefineComment() {
           if (result.success) {
             // Update progress
             setCurrentVideoIndex(index);
-            return { videoId: video.id, comment: result.comment, transcript, success: true };
+            return { contentId: content.id, comment: result.comment, transcript, success: true };
           } else {
-            return { videoId: video.id, error: result.error, success: false };
+            return { contentId: content.id, error: result.error, success: false };
           }
         } catch (error) {
           console.error('Error generating comment:', error);
-          return { videoId: video.id, error: 'Failed to generate', success: false };
+          return { contentId: content.id, error: 'Failed to generate', success: false };
         }
       });
 
       // Wait for all generations to complete
       const results = await Promise.all(generatePromises);
-      
+
       console.log('All parallel generations completed:', results);
-      
+
       // Process all results
       const generatedComments: { [key: string]: string } = {};
       const updatedTranscripts: { [key: string]: string | null } = { ...(data.videoTranscripts || {}) };
       let successCount = 0;
-      
+
       results.forEach((result) => {
         if (result.success && result.comment) {
-          generatedComments[result.videoId] = result.comment;
+          generatedComments[result.contentId] = result.comment;
           if (result.transcript) {
-            updatedTranscripts[result.videoId] = result.transcript;
+            updatedTranscripts[result.contentId] = result.transcript;
           }
           successCount++;
         }
       });
-      
+
       // Update all data at once
-      updateData({ 
+      updateData({
         generatedComment: generatedComments,
         videoTranscripts: updatedTranscripts
       });
-      
+
       if (successCount === videos.length) {
         toast.success(`All ${videos.length} comments generated successfully!`);
       } else {
         toast.warning(`${successCount}/${videos.length} comments generated`);
       }
-      
+
       setIsGenerating(false);
-      
+
       // Auto-advance to next step after state updates
       setTimeout(() => {
         nextStep();
@@ -159,34 +162,37 @@ export function DefineComment() {
         ? COMMENT_TEMPLATES.find(t => t.id === data.selectedTemplate)?.template
         : undefined;
 
-      // First, try to fetch transcript for better context
+      // First, try to fetch transcript for YouTube videos
       let transcript: string | null = null;
-      try {
-        const transcriptResponse = await fetch(
-          `/api/youtube/video?url=https://www.youtube.com/watch?v=${currentVideo.id}`
-        );
-        const transcriptData = await transcriptResponse.json();
-        transcript = transcriptData.transcript || null;
-        
-        // Store transcript for potential re-generation
-        if (transcript) {
-          const updatedTranscripts = {
-            ...(data.videoTranscripts || {}),
-            [currentVideo.id]: transcript,
-          };
-          updateData({ videoTranscripts: updatedTranscripts });
+      if (data.selectedPlatform === 'youtube') {
+        try {
+          const transcriptResponse = await fetch(
+            `/api/youtube/video?url=https://www.youtube.com/watch?v=${currentVideo.id}`
+          );
+          const transcriptData = await transcriptResponse.json();
+          transcript = transcriptData.transcript || null;
+
+          // Store transcript for potential re-generation
+          if (transcript) {
+            const updatedTranscripts = {
+              ...(data.videoTranscripts || {}),
+              [currentVideo.id]: transcript,
+            };
+            updateData({ videoTranscripts: updatedTranscripts });
+          }
+        } catch (err) {
+          console.log('Could not fetch transcript, using metadata only');
         }
-      } catch (err) {
-        console.log('Could not fetch transcript, using metadata only');
       }
 
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          videoTitle: currentVideo.title,
-          videoDescription: currentVideo.description,
-          channelTitle: currentVideo.channelTitle,
+          platform: data.selectedPlatform,
+          contentTitle: currentVideo.title || '',
+          contentDescription: currentVideo.description || '',
+          authorName: currentVideo.channelTitle || '',
           template,
           sentiment: sentiment,
           additionalContext: data.additionalContext,

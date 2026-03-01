@@ -4,27 +4,29 @@ import { createInsertSchema } from "drizzle-zod";
 export const postedComments = pgTable("posted_comments", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull(),
-  videoId: text("video_id").notNull(),
-  videoTitle: text("video_title").notNull(),
-  videoUrl: text("video_url").notNull(),
-  channelTitle: text("channel_title").notNull(),
+  platform: text("platform").notNull(), // 'youtube', 'instagram', 'facebook'
+  contentId: text("content_id").notNull(), // videoId, postId, etc.
+  contentTitle: text("content_title").notNull(),
+  contentUrl: text("content_url").notNull(),
+  authorName: text("author_name").notNull(), // channelTitle, username, pageName
   commentText: text("comment_text").notNull(),
   sentiment: text("sentiment").notNull(),
-  youtubeCommentId: text("youtube_comment_id"),
-  
+  platformCommentId: text("platform_comment_id"), // youtubeCommentId, instagramCommentId, etc.
+
   // Analytics data
   likeCount: integer("like_count").default(0),
   replyCount: integer("reply_count").default(0),
-  
+
   // Metadata
   postedAt: timestamp("posted_at").defaultNow().notNull(),
   lastSyncedAt: timestamp("last_synced_at"),
-  
+
   // Store additional context
   metadata: jsonb("metadata"),
 }, (table) => ({
   userIdIdx: index("user_id_idx").on(table.userId),
-  videoIdIdx: index("video_id_idx").on(table.videoId),
+  platformIdx: index("platform_idx").on(table.platform),
+  contentIdIdx: index("content_id_idx").on(table.contentId),
   postedAtIdx: index("posted_at_idx").on(table.postedAt),
 }));
 
